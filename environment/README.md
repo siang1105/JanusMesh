@@ -1,0 +1,1 @@
+Local export snapshots go under `exports/` when you run `scripts/export_env_snapshots.sh` (that folder is gitignored). The **committed** install spec for users should be the repo-root `environment.yml` once you finish merging; see `docs/ENVIRONMENT.md`.
