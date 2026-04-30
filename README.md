@@ -12,8 +12,10 @@ In this paper, we present a fast and training-free framework for generating text
 
 Extensive experiments demonstrate that our method generates highly realistic, dual-semantic 3D illusions in just 3–5 minutes. It significantly outperforms existing methods in geometric integrity, semantic recognizability, and efficiency.
 
-[![Paper PDF](https://img.shields.io/badge/Paper-PDF-4285F4?logo=adobeacrobatreader&logoColor=white)](./docs/JanusMesh_paper.pdf?raw=1)
+[![Paper PDF](https://img.shields.io/badge/Paper-PDF-4285F4?logo=adobeacrobatreader&logoColor=white)](./docs/JanusMesh_paper.pdf?download=1)
 [![Project Website](https://img.shields.io/badge/Project-Website-orange)](https://siang1105.github.io/JanusMesh.github.io/)
+
+Direct paper link (download): [JanusMesh_paper.pdf](./docs/JanusMesh_paper.pdf?download=1)
 
 ---
 
