@@ -19,7 +19,12 @@ from synctweedies.method_configs.case_config import (CANONICAL_DENOISING_ZT,
 from synctweedies.model.base_model import BaseModel
 
 from diffusers import ControlNetModel
-from diffusers.utils import is_compiled_module
+try:
+    # Newer diffusers versions
+    from diffusers.utils.torch_utils import is_compiled_module
+except ImportError:
+    # Older diffusers versions
+    from diffusers.utils import is_compiled_module
 
 
 color_constants = {"black": [-1, -1, -1], "white": [1, 1, 1], "maroon": [0, -1, -1],
@@ -224,7 +229,7 @@ class MeshTextureModel(BaseModel):
         height = height or self.model.unet.config.sample_size * self.model.vae_scale_factor
         width = width or self.model.unet.config.sample_size * self.model.vae_scale_factor
 
-        controlnet_conditioning_scale = self.config.conditioning_scale
+        controlnet_conditioning_scale = float(self.config.conditioning_scale)
         # prompt = f"Best quality, extremely detailed {self.config.prompt}"
         prompt = f"Best quality, {self.config.prompt}"
         negative_prompt = self.config.negative_prompt
@@ -237,15 +242,15 @@ class MeshTextureModel(BaseModel):
 
         # 1. Check inputs. Raise error if not correct
         self.model.check_inputs(
-            prompt,
-            torch.zeros((1,3,height,width), device=self.model._execution_device),
-            callback_steps,
-            negative_prompt,
-            None,
-            None,
-            controlnet_conditioning_scale,
-            control_guidance_start,
-            control_guidance_end,
+            prompt=prompt,
+            image=torch.zeros((1, 3, height, width), device=self.model._execution_device),
+            callback_steps=callback_steps,
+            negative_prompt=negative_prompt,
+            prompt_embeds=None,
+            negative_prompt_embeds=None,
+            controlnet_conditioning_scale=controlnet_conditioning_scale,
+            control_guidance_start=control_guidance_start,
+            control_guidance_end=control_guidance_end,
         )
 
         # 2. Define call parameters
@@ -609,7 +614,6 @@ class MeshTextureModel(BaseModel):
                         # Pure region 1
                         pos_embed = azim_prompt(prompt_embed_dict, pose)
                         neg_embed = azim_neg_prompt(negative_prompt_embed_dict, pose)
-                        print(f"Using first prompt for view {i}, azimuth: {azim} (normalized: {azim_normalized})")
                 elif azim_normalized > 60 and azim_normalized <= 180:
                     # Region 2: 60° → 180°
                     # Check if near boundaries
@@ -637,7 +641,6 @@ class MeshTextureModel(BaseModel):
                         # Pure region 2
                         pos_embed = azim_prompt(secondary_prompt_embed_dict, pose)
                         neg_embed = azim_neg_prompt(secondary_negative_prompt_embed_dict, pose)
-                        print(f"Using second prompt for view {i}, azimuth: {azim} (normalized: {azim_normalized})")
                 elif azim_normalized > 180 and azim_normalized <= 300:
                     # Region 3: 180° → 300°
                     # Check if near boundaries
@@ -682,12 +685,10 @@ class MeshTextureModel(BaseModel):
                             # Region 1: use prompt1
                             pos_embed = azim_prompt(prompt_embed_dict, pose)
                             neg_embed = azim_neg_prompt(negative_prompt_embed_dict, pose)
-                            print(f"Using first prompt for view {i}, azimuth: {azim} (hard switch, region 1)")
                         else:
                             # Region 2: use prompt2
                             pos_embed = azim_prompt(secondary_prompt_embed_dict, pose)
                             neg_embed = azim_neg_prompt(secondary_negative_prompt_embed_dict, pose)
-                            print(f"Using second prompt for view {i}, azimuth: {azim} (hard switch, region 2)")
                         
                         pos_embeds_per_view.append(pos_embed)
                         neg_embeds_per_view.append(neg_embed)
@@ -736,12 +737,10 @@ class MeshTextureModel(BaseModel):
                         # Pure prompt1 (0° or 360°)
                         pos_embed = azim_prompt(prompt_embed_dict, pose)
                         neg_embed = azim_neg_prompt(negative_prompt_embed_dict, pose)
-                        print(f"Using first prompt for view {i}, azimuth: {azim} (weight1={weight1:.2f})")
                     elif abs(weight1 - 0.0) < 1e-6:
                         # Pure prompt2 (180°)
                         pos_embed = azim_prompt(secondary_prompt_embed_dict, pose)
                         neg_embed = azim_neg_prompt(secondary_negative_prompt_embed_dict, pose)
-                        print(f"Using second prompt for view {i}, azimuth: {azim} (weight1={weight1:.2f})")
                     else:
                         # Blend prompts
                         embed1 = azim_prompt(prompt_embed_dict, pose)
@@ -776,7 +775,6 @@ class MeshTextureModel(BaseModel):
                             # Pure region 1
                             pos_embed = azim_prompt(prompt_embed_dict, pose)
                             neg_embed = azim_neg_prompt(negative_prompt_embed_dict, pose)
-                            print(f"Using first prompt for view {i}, azimuth: {azim}")
                     else:
                         # Region 2: 180° → 360°
                         if azim <= 180 + transition_width:
@@ -793,7 +791,6 @@ class MeshTextureModel(BaseModel):
                             # Pure region 2
                             pos_embed = azim_prompt(secondary_prompt_embed_dict, pose)
                             neg_embed = azim_neg_prompt(secondary_negative_prompt_embed_dict, pose)
-                            print(f"Using second prompt for view {i}, azimuth: {azim}")
                     
                     pos_embeds_per_view.append(pos_embed)
                     neg_embeds_per_view.append(neg_embed)

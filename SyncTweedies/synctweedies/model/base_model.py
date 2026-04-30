@@ -3,11 +3,17 @@ import torch
 from datetime import datetime
 from pathlib import Path
 import os
+import inspect
 
 from diffusers import (ControlNetModel, DDIMScheduler, DDPMScheduler,
                        StableDiffusionControlNetPipeline,
                        DiffusionPipeline, StableDiffusionPipeline)
-from diffusers.utils import randn_tensor
+try:
+    # Newer diffusers versions
+    from diffusers.utils.torch_utils import randn_tensor
+except ImportError:
+    # Older diffusers versions
+    from diffusers.utils import randn_tensor
 
 from synctweedies.diffusion.controlnet import SyncTweediesControlNet
 from synctweedies.diffusion.stable_diffusion import SyncTweediesSD
@@ -49,6 +55,10 @@ class BaseModel(metaclass=ABCMeta):
         """
         Load diffusion model
         """
+        def _filter_kwargs_for_ctor(ctor, kwargs_dict):
+            allowed = inspect.signature(ctor).parameters
+            return {k: v for k, v in kwargs_dict.items() if k in allowed}
+
 
         def get_scheduler(pipe):
             if self.config.sampling_method == "ddpm":
@@ -71,8 +81,11 @@ class BaseModel(metaclass=ABCMeta):
                 torch_dtype=torch.float16,
             )
             pipe.scheduler = get_scheduler(pipe)
+            controlnet_components = _filter_kwargs_for_ctor(
+                SyncTweediesControlNet.__init__, pipe.components
+            )
             self.model = SyncTweediesControlNet(
-                gpu_id=self.config.gpu, **pipe.components
+                gpu_id=self.config.gpu, **controlnet_components
             )
 
         elif self.config.model == "deepfloyd":
@@ -98,8 +111,11 @@ class BaseModel(metaclass=ABCMeta):
                 torch_dtype=torch.float16,
             )
             pipe.scheduler = get_scheduler(pipe)
+            sd_components = _filter_kwargs_for_ctor(
+                SyncTweediesSD.__init__, pipe.components
+            )
             self.model = SyncTweediesSD(
-                **pipe.components,
+                **sd_components,
             )
             
         else:

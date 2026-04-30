@@ -4,7 +4,7 @@ from diffusers.models import AutoencoderKL, UNet2DConditionModel
 from diffusers.schedulers import KarrasDiffusionSchedulers
 from diffusers.image_processor import VaeImageProcessor
 from diffusers.pipelines.stable_diffusion.safety_checker import StableDiffusionSafetyChecker
-from transformers import CLIPImageProcessor, CLIPTextModel, CLIPTokenizer
+from transformers import CLIPImageProcessor, CLIPTextModel, CLIPTokenizer, CLIPVisionModelWithProjection
 
 from synctweedies.diffusion.diffusion_base import DiffusionModel
 from synctweedies.utils.mesh_utils import replace_attention_processors, SamplewiseAttnProcessor2_0
@@ -20,13 +20,20 @@ class SyncTweediesSD(DiffusionModel, StableDiffusionPipeline):
         scheduler: KarrasDiffusionSchedulers,
         safety_checker: StableDiffusionSafetyChecker,
         feature_extractor: CLIPImageProcessor,
+        image_encoder: CLIPVisionModelWithProjection = None,
         requires_safety_checker: bool = True,
     ):
         
         super().__init__(
-            vae, text_encoder, tokenizer, unet, 
-            scheduler, safety_checker, 
-            feature_extractor, requires_safety_checker
+            vae=vae,
+            text_encoder=text_encoder,
+            tokenizer=tokenizer,
+            unet=unet,
+            scheduler=scheduler,
+            safety_checker=safety_checker,
+            feature_extractor=feature_extractor,
+            image_encoder=image_encoder,
+            requires_safety_checker=requires_safety_checker,
         )
         
         self.scheduler = scheduler

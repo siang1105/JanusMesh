@@ -17,50 +17,83 @@ Extensive experiments demonstrate that our method generates highly realistic, du
 
 ---
 
-## Repository layout
+## Environment setup
 
-| Path | Role |
-|------|------|
-| `example_text.py` | Main entry: dual-prompt TRELLIS run and optional SyncTweedies mesh texturing |
-| `trellis/` | Modified TRELLIS library (text-to-3D pipeline, samplers, renderers) |
-| `dataset_toolkits/` | Used by voxel blending (`_render` in samplers) |
-| `configs/` | Optional local configs |
-| `clip/` | CLIP view scoring and rotation heuristics for `example_text.py` |
-| `SyncTweedies/` | Mesh texturing app (`--app mesh`); see `SyncTweedies/README.md` |
-
-Excluded on purpose from this bundle: legacy `evaluate/`, `clip2/`, batch scripts, `outputs/`, and large `SyncTweedies/data/` (not required for `--app mesh` with a user-supplied GLB).
-
-## Environment (single env: `janusmesh`)
-
-**Goal:** one conda env for both Trellis and SyncTweedies.
-
-1. On your machine (where `trellis` and `synctweedies` already work), run:
-   ```bash
-   bash scripts/export_env_snapshots.sh trellis synctweedies
-   ```
-2. Follow **`docs/ENVIRONMENT.md`** to merge exports into a root **`environment.yml`** named `janusmesh`, test `conda env create -f environment.yml`, then commit that file.
-3. Set `run_synctweedies_mesh(..., conda_env_name="janusmesh")` in `example_text.py` (or keep two envs until the merged file is verified).
-
-**Until `environment.yml` is published**, you can still use two envs as before and rely on `SyncTweedies/environment.yml` for the texturing stack.
-
-## Run
-
-From this directory:
+### 1) Create and activate environment
 
 ```bash
 cd JanusMesh
-python example_text.py --prompt1 "a frog sitting on a leaf" --prompt2 "a turtle" --case 2 --manual_rotation_step 0
+conda env create -f environment.yml
+conda activate janusmesh
 ```
 
-- **`--case` 1 or 2:** generation only (fixed voxel split). For case 2, set **`--manual_rotation_step`** (90° steps) as needed.
-- **`--case` 3:** CLIP pose search (step 1) then generation (step 2).
-- Weights load from Hugging Face (`microsoft/TRELLIS-text-xlarge`); ensure network/HF access or a local cache.
+### 2) Install CUDA extensions (required)
 
-## Secrets
+```bash
+bash scripts/setup_extensions.sh
+```
 
-- **`OPENAI_API_KEY`**: Only needed if you call GPT-based helpers in `clip/render_dual_eval.py`. `example_text.py` uses CLIP when **`--case 3`** (step 1 before generation) and does not need OpenAI for that path; the client is created lazily on first GPT use.
+`scripts/setup_extensions.sh` installs source-built CUDA extensions (`flash-attn`, `nvdiffrast`, `diff-gaussian-rasterization`, `pytorch3d`) and runs import checks at the end.
 
-## Notes
+### 3) Optional toolchain overrides
 
-- SyncTweedies path is **`JanusMesh/SyncTweedies`** (sibling of `example_text.py`), not the parent of the repo.
-- If you previously had an API key committed in upstream `TRELLIS/clip/render_dual_eval.py`, **rotate that key** in the OpenAI dashboard; this release uses environment variables only.
+Default setup assumes CUDA 11.8 and GCC/G++ 11. If your machine differs, export these before running `setup_extensions.sh`:
+
+```bash
+export CUDA_HOME=/usr/local/cuda-11.8
+export CC=/usr/bin/gcc-11
+export CXX=/usr/bin/g++-11
+export TORCH_CUDA_ARCH_LIST=8.9
+export MAX_JOBS=4
+```
+
+### 4) Quick validation
+
+```bash
+python -c "import torch; print(torch.__version__, torch.version.cuda)"
+python -c "import nvdiffrast.torch as dr; import pytorch3d; print('extensions ok')"
+```
+
+## Usage
+
+### Basic generation
+
+Run from repo root:
+
+```bash
+cd JanusMesh
+python example_text.py --prompt1 "A Sofa" --prompt2 "Open Book" --case 2 
+```
+
+### Arguments
+
+- **`--case 1` or `--case 2`**: direct generation with fixed voxel split.
+- **`--case 3`**: CLIP pose search first, then generation.
+
+### Guidance and blending options
+
+- **`--guidance`** has 3 modes:
+  - `false` (default): no guidance.
+  - `noise_guidance`: guidance in noise space.
+  - `space_control`: guidance in space-control mode.
+- **`--t0_idx_value`** controls guidance strength for `space_control`; larger value means stronger guidance.
+- **`--guided_structure_weight`** controls guidance strength for `noise_guidance`; larger value means stronger guidance.
+- **`--blend_strategy`** controls how the two objects are blended. We strongly recommend `sdf_avg`.
+
+### Output
+
+Results are written under `outputs/` with timestamped folders (meshes, renders, and intermediate artifacts).
+
+### Model download
+
+Model weights are loaded from Hugging Face (`microsoft/TRELLIS-text-xlarge`). Ensure network access or a valid local cache.
+
+### Common install issue
+
+If `conda env create -f environment.yml` stalls at `Solving environment` for a long time, stop it and try:
+
+```bash
+conda install -n base -c conda-forge mamba -y
+mamba env create -f environment.yml
+```
+

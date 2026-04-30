@@ -80,7 +80,7 @@ def run_synctweedies_mesh(
     azim_split_mode = azim_split_mode
 
     cmd = [
-        "conda", "run", "-n", conda_env_name,
+        # "conda", "run", "-n", conda_env_name,
         "python", "main.py",
         "--app", "mesh",
         "--prompt", main_prompt,
@@ -132,7 +132,7 @@ def parse_args():
                         help='Case 2 only: azimuth alignment in 90° steps (default: 0). Case 3 uses CLIP instead.')
     parser.add_argument('--guidance', type=str, default='false', choices=['false', 'noise_guidance', 'space_control'],
                         help='Guidance: false, noise_guidance, or space_control (default: false)')
-    parser.add_argument('--case', type=int, default=1, choices=[1, 2, 3],
+    parser.add_argument('--case', type=int, default=2, choices=[1, 2, 3],
                         help='1/2: generate only (fixed split; use --manual_rotation_step for case 2). '
                              '3: CLIP pose search then generate.')
     parser.add_argument('--seed', type=int, default=1,

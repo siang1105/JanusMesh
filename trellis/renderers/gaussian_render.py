@@ -11,6 +11,7 @@
 
 import torch
 import math
+import inspect
 from easydict import EasyDict as edict
 import numpy as np
 from ..representations.gaussian import Gaussian
@@ -70,22 +71,30 @@ def render(viewpoint_camera, pc : Gaussian, pipe, bg_color : torch.Tensor, scali
     kernel_size = pipe.kernel_size
     subpixel_offset = torch.zeros((int(viewpoint_camera.image_height), int(viewpoint_camera.image_width), 2), dtype=torch.float32, device="cuda")
 
-    raster_settings = GaussianRasterizationSettings(
-        image_height=int(viewpoint_camera.image_height),
-        image_width=int(viewpoint_camera.image_width),
-        tanfovx=tanfovx,
-        tanfovy=tanfovy,
-        kernel_size=kernel_size,
-        subpixel_offset=subpixel_offset,
-        bg=bg_color,
-        scale_modifier=scaling_modifier,
-        viewmatrix=viewpoint_camera.world_view_transform,
-        projmatrix=viewpoint_camera.full_proj_transform,
-        sh_degree=pc.active_sh_degree,
-        campos=viewpoint_camera.camera_center,
-        prefiltered=False,
-        debug=pipe.debug
-    )
+    raster_settings_kwargs = {
+        "image_height": int(viewpoint_camera.image_height),
+        "image_width": int(viewpoint_camera.image_width),
+        "tanfovx": tanfovx,
+        "tanfovy": tanfovy,
+        "bg": bg_color,
+        "scale_modifier": scaling_modifier,
+        "viewmatrix": viewpoint_camera.world_view_transform,
+        "projmatrix": viewpoint_camera.full_proj_transform,
+        "sh_degree": pc.active_sh_degree,
+        "campos": viewpoint_camera.camera_center,
+        "prefiltered": False,
+        "debug": pipe.debug,
+    }
+    # TRELLIS expects a mip-splatting flavored rasterizer exposing
+    # kernel_size/subpixel_offset, but some environments only provide
+    # the original graphdeco API. Pass optional args only when supported.
+    supported_params = inspect.signature(GaussianRasterizationSettings).parameters
+    if "kernel_size" in supported_params:
+        raster_settings_kwargs["kernel_size"] = kernel_size
+    if "subpixel_offset" in supported_params:
+        raster_settings_kwargs["subpixel_offset"] = subpixel_offset
+
+    raster_settings = GaussianRasterizationSettings(**raster_settings_kwargs)
     
     rasterizer = GaussianRasterizer(raster_settings=raster_settings)
 

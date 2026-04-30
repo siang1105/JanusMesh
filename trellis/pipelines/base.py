@@ -38,10 +38,39 @@ class Pipeline:
 
         _models = {}
         for k, v in args['models'].items():
-            try:
-                _models[k] = models.from_pretrained(f"{path}/{v}")
-            except:
-                _models[k] = models.from_pretrained(v)
+            # Support both absolute HF refs ("org/repo/ckpts/model")
+            # and relative refs from pipeline.json ("ckpts/model").
+            # Avoid masking the real error with a broad fallback.
+            if v.count('/') >= 2:
+                candidates = [v]
+            else:
+                candidates = [f"{path}/{v}", v]
+
+            last_error = None
+            for candidate in candidates:
+                try:
+                    _models[k] = models.from_pretrained(candidate)
+                    break
+                except Exception as e:
+                    last_error = e
+                    # Only try the next candidate when this looks like a
+                    # reference-resolution error (e.g. missing repo/file).
+                    # For runtime/import errors (e.g. missing flash_attn),
+                    # raise immediately to preserve the real root cause.
+                    resolution_error_names = {
+                        "HTTPError",
+                        "HFHubHTTPError",
+                        "RepositoryNotFoundError",
+                        "EntryNotFoundError",
+                        "LocalEntryNotFoundError",
+                        "FileNotFoundError",
+                    }
+                    if e.__class__.__name__ not in resolution_error_names:
+                        raise
+            else:
+                raise RuntimeError(
+                    f"Failed to load model '{k}' from reference '{v}' (path='{path}')."
+                ) from last_error
 
         new_pipeline = Pipeline(_models)
         new_pipeline._pretrained_args = args

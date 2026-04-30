@@ -1,0 +1,5 @@
+# Install PyTorch with CUDA 11.8 wheels (must run before / alongside other pip deps).
+--extra-index-url https://download.pytorch.org/whl/cu118
+torch==2.4.0+cu118
+torchvision==0.19.0+cu118
+torchaudio==2.4.0+cu118
