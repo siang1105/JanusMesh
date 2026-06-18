@@ -1,5 +1,10 @@
 # JanusMesh: Fast, Training-Free Text-Driven 3D Visual Illusions
 
+**Siang-Ling Zhang**, **Huai-Hsun Cheng**, **Tsung-Ju Yang**, and **Yu-Lun Liu**  
+National Yang Ming Chiao Tung University
+
+**Accepted to ECCV 2026**
+
 ![Teaser](docs/teaser.png)
 
 *JanusMesh is a training-free pipeline that turns two text prompts into a single 3D asset whose semantics read differently from different viewpoints—typically in a few minutes—by fusing dual-branch 3D generation in voxel/SDF space and refining appearance with view-conditioned 2D diffusion on the mesh.*
@@ -12,6 +17,7 @@ In this paper, we present a fast and training-free framework for generating text
 
 Extensive experiments demonstrate that our method generates highly realistic, dual-semantic 3D illusions in just 3–5 minutes. It significantly outperforms existing methods in geometric integrity, semantic recognizability, and efficiency.
 
+[![ECCV 2026](https://img.shields.io/badge/ECCV-2026-Accepted-00A4A6)](https://eccv.ecva.net/)
 [![Paper PDF](https://img.shields.io/badge/Paper-PDF-4285F4?logo=adobeacrobatreader&logoColor=white)](./docs/JanusMesh_paper.pdf?download=1)
 [![Project Website](https://img.shields.io/badge/Project-Website-orange)](https://siang1105.github.io/JanusMesh.github.io/)
 
